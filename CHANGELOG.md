@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Dependency: TypeScript
+- `LexOrder` class
+- `LexOrderOptions` interface
 
 
 [unreleased]: https://github.com/aryelgois/lexorder/compare/initial-commit...HEAD
