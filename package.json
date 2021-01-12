@@ -1,0 +1,29 @@
+{
+  "name": "lexorder",
+  "version": "0.1.0",
+  "description": "Arbitrary precision lexicographical ordering",
+  "keywords": [
+    "lex",
+    "lexico",
+    "lexicographic",
+    "lexicographical",
+    "order",
+    "ordering",
+    "position",
+    "sort"
+  ],
+  "author": "Aryel Mota Góis",
+  "license": "MIT",
+  "homepage": "https://github.com/aryelgois/lexorder#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aryelgois/lexorder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aryelgois/lexorder/issues"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
