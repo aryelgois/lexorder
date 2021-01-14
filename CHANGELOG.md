@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LexOrder` class
 - `LexOrderOptions` interface
 - `SymbolConverter` interface
+- `nativeBigInt256` module
+  - `String.padStart()` requires TS target ES2017 or higher
+  - `BigInt` requires TS target ES2020 or higher
 
 
 [unreleased]: https://github.com/aryelgois/lexorder/compare/initial-commit...HEAD
