@@ -5,8 +5,10 @@ export default class LexOrder {
     private spreadLevel: number
 
     private zeroSymbol: string
+    private firstSymbol: string
 
     private validatePattern: RegExp
+    private overflowPattern: RegExp
     private zeroRightPattern: RegExp
 
     constructor (options: LexOrderOptions) {
@@ -29,9 +31,23 @@ export default class LexOrder {
             throw new Error('Got undefined when reading symbols[0].')
         }
 
+        const firstSymbol = symbols[1]
+
+        if (firstSymbol === undefined) {
+            throw new Error('Got undefined when reading symbols[1].')
+        }
+
+        const lastSymbol = symbols[symbols.length - 1]
+
+        if (lastSymbol === undefined) {
+            throw new Error('Got undefined when reading last symbol.')
+        }
+
         this.zeroSymbol = zeroSymbol
+        this.firstSymbol = firstSymbol
 
         this.validatePattern = RegExp(`^(${symbols.join('|')})*(${symbols.slice(1).join('|')})$`)
+        this.overflowPattern = RegExp(`^(${lastSymbol})+$`)
         this.zeroRightPattern = RegExp(`(${zeroSymbol})+$`)
     }
 
@@ -47,5 +63,16 @@ export default class LexOrder {
         return this.converter.fromBigInt(value)
             .padStart(length, this.zeroSymbol)
             .replace(this.zeroRightPattern, '')
+    }
+
+    next (word: string) {
+        if (
+            this.converter.countSymbols(word) < this.spreadLevel ||
+            this.overflowPattern.test(word)
+        ) {
+            return word + this.firstSymbol
+        }
+
+        return this.encode(this.decode(word) + BigInt(1), word.length)
     }
 }
