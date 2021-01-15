@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `BigInt` requires TS target ES2020 or higher
 - `index.ts` with `LexOrder` factory
 - Dependency: Jest
+- Unit tests for `nativeBigInt256`
 
 
 [unreleased]: https://github.com/aryelgois/lexorder/compare/initial-commit...HEAD
