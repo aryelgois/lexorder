@@ -6,9 +6,11 @@ export default class LexOrder {
 
     private zeroSymbol: string
     private firstSymbol: string
+    private lastSymbol: string
 
     private validatePattern: RegExp
     private overflowPattern: RegExp
+    private underflowPattern: RegExp
     private zeroRightPattern: RegExp
 
     constructor (options: LexOrderOptions) {
@@ -45,9 +47,11 @@ export default class LexOrder {
 
         this.zeroSymbol = zeroSymbol
         this.firstSymbol = firstSymbol
+        this.lastSymbol = lastSymbol
 
         this.validatePattern = RegExp(`^(${symbols.join('|')})*(${symbols.slice(1).join('|')})$`)
         this.overflowPattern = RegExp(`^(${lastSymbol})+$`)
+        this.underflowPattern = RegExp(`^(${zeroSymbol})*${firstSymbol}$`)
         this.zeroRightPattern = RegExp(`(${zeroSymbol})+$`)
     }
 
@@ -74,5 +78,14 @@ export default class LexOrder {
         }
 
         return this.encode(this.decode(word) + BigInt(1), word.length)
+    }
+
+    previous (word: string) {
+        if (this.underflowPattern.test(word)) {
+            return ''.padStart(word.length, this.zeroSymbol) + this.lastSymbol
+        }
+
+        return this.encode(this.decode(word) - BigInt(1), word.length) +
+            (this.converter.countSymbols(word) < this.spreadLevel ? this.lastSymbol : '')
     }
 }
