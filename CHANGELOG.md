@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `String.padStart()` requires TS target ES2017 or higher
   - `BigInt` requires TS target ES2020 or higher
 - `index.ts` with `LexOrder` factory
+- Dependency: Jest
 
 
 [unreleased]: https://github.com/aryelgois/lexorder/compare/initial-commit...HEAD

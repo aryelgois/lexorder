@@ -19,6 +19,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ],
   "include": [
     "./src"
   ]
