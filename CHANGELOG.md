@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `index.ts` with `LexOrder` factory
 - Dependency: Jest
 - Unit tests for `nativeBigInt256`
+- Unit tests for `LexOrder`
 
 
 [unreleased]: https://github.com/aryelgois/lexorder/compare/initial-commit...HEAD
