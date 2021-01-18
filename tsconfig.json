@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ES2020",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "./dist/esm",
+    "outDir": "./test",
 
     "strict": true,
     "importsNotUsedAsValues": "error",
@@ -19,10 +15,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "exclude": [
-    "node_modules",
-    "**/*.spec.ts"
-  ],
   "include": [
     "./src"
   ]
