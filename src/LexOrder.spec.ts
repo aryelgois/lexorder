@@ -14,6 +14,9 @@ delete symbolsUndefinedZero[0]
 const symbolsUndefinedFirst = [...'0123']
 delete symbolsUndefinedFirst[1]
 
+const symbolsUndefinedMedian = [...'0123']
+delete symbolsUndefinedMedian[2]
+
 const symbolsUndefinedLast = [...'0123']
 delete symbolsUndefinedLast[3]
 
@@ -40,6 +43,105 @@ const wordWithLeadingZero = '042'
 const wordWithTrailingZeroValue = BigInt(32)
 const wordWithTrailingZero = '40'
 const wordWithTrailingZeroClean = '4'
+
+// intermediate()
+
+interface IntermediateTestData {
+    wordA: { initial: string; padded: string; paddedValue: bigint }
+    wordB: { initial: string; padded: string; paddedValue: bigint }
+    maxLength: number
+    average: bigint
+    encoded: string
+    result: string
+}
+
+const intermediateTestData: IntermediateTestData[] = [
+    // close, same level
+    {
+        wordA: {
+            initial: '45',
+            padded: '45',
+            paddedValue: BigInt(37)
+        },
+        wordB: {
+            initial: '46',
+            padded: '46',
+            paddedValue: BigInt(38)
+        },
+        maxLength: 2,
+        average: BigInt(37),
+        encoded: '45',
+        result: '454'
+    },
+    // close, different level
+    {
+        wordA: {
+            initial: '37',
+            padded: '37',
+            paddedValue: BigInt(31)
+        },
+        wordB: {
+            initial: '4',
+            padded: '40',
+            paddedValue: BigInt(32)
+        },
+        maxLength: 2,
+        average: BigInt(31),
+        encoded: '37',
+        result: '374'
+    },
+    // far, same level
+    {
+        wordA: {
+            initial: '25',
+            padded: '25',
+            paddedValue: BigInt(21)
+        },
+        wordB: {
+            initial: '31',
+            padded: '31',
+            paddedValue: BigInt(25)
+        },
+        maxLength: 2,
+        average: BigInt(23),
+        encoded: '27',
+        result: '27'
+    },
+    // far, different level
+    {
+        wordA: {
+            initial: '2',
+            padded: '20',
+            paddedValue: BigInt(16)
+        },
+        wordB: {
+            initial: '43',
+            padded: '43',
+            paddedValue: BigInt(35)
+        },
+        maxLength: 2,
+        average: BigInt(25),
+        encoded: '31',
+        result: '314'
+    },
+    // far, leading zero
+    {
+        wordA: {
+            initial: '005',
+            padded: '005',
+            paddedValue: BigInt(5)
+        },
+        wordB: {
+            initial: '03',
+            padded: '030',
+            paddedValue: BigInt(24)
+        },
+        maxLength: 3,
+        average: BigInt(14),
+        encoded: '016',
+        result: '0164'
+    }
+]
 
 // next(), previous()
 
@@ -156,7 +258,7 @@ describe('constructor', () => {
     })
 
     it('throws when reads undefined from symbols', () => {
-        expect.assertions(6)
+        expect.assertions(8)
 
         runThrow(
             () => lexOrder({ symbols: symbolsUndefinedZero }),
@@ -166,6 +268,11 @@ describe('constructor', () => {
         runThrow(
             () => lexOrder({ symbols: symbolsUndefinedFirst }),
             'Got undefined when reading symbols[1].'
+        )
+
+        runThrow(
+            () => lexOrder({ symbols: symbolsUndefinedMedian }),
+            'Got undefined when calculating median symbol.'
         )
 
         runThrow(
@@ -227,6 +334,58 @@ describe('encode', () => {
         run(validWordValue, validWord)
         run(wordWithLeadingZeroValue, wordWithLeadingZero)
         run(wordWithTrailingZeroValue, wordWithTrailingZero, wordWithTrailingZeroClean)
+    })
+})
+
+describe('intermediate', () => {
+    const setup = (instance = lexOrder()) => {
+        instance.decode = mockedDecode
+        instance.encode = mockedEncode
+
+        return instance
+    }
+
+    it('calculates the average from the numeric value of two words', () => {
+        expect.assertions(3 * intermediateTestData.length)
+
+        const instance = setup()
+
+        for (const { wordA, wordB, maxLength, average, encoded, result } of intermediateTestData) {
+            mockedDecode
+                .mockReturnValueOnce(wordA.paddedValue)
+                .mockReturnValueOnce(wordB.paddedValue)
+
+            mockedEncode.mockReturnValueOnce(encoded)
+
+            expect(instance.intermediate(wordA.initial, wordB.initial)).toBe(result)
+
+            expect(mockedDecode.mock.calls).toEqual([
+                [wordA.padded],
+                [wordB.padded]
+            ])
+            expect(stringifyBigInt(mockedEncode.mock.calls)).toEqual(stringifyBigInt([
+                [average, maxLength]
+            ]))
+
+            mockedEncode.mockClear()
+            mockedDecode.mockClear()
+        }
+    })
+
+    it('throws when both arguments are equal', () => {
+        expect.assertions(4)
+
+        const instance = setup()
+
+        try {
+            instance.intermediate(validWord, validWord)
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error)
+            expect(error.message).toBe('Both arguments are equal.')
+        }
+
+        expect(mockedDecode).toHaveBeenCalledTimes(0)
+        expect(mockedEncode).toHaveBeenCalledTimes(0)
     })
 })
 

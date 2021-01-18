@@ -6,6 +6,7 @@ export default class LexOrder {
 
     private zeroSymbol: string
     private firstSymbol: string
+    private medianSymbol: string
     private lastSymbol: string
 
     private validatePattern: RegExp
@@ -39,6 +40,12 @@ export default class LexOrder {
             throw new Error('Got undefined when reading symbols[1].')
         }
 
+        const medianSymbol = symbols[Math.round(symbols.length / 2)]
+
+        if (medianSymbol === undefined) {
+            throw new Error('Got undefined when calculating median symbol.')
+        }
+
         const lastSymbol = symbols[symbols.length - 1]
 
         if (lastSymbol === undefined) {
@@ -47,6 +54,7 @@ export default class LexOrder {
 
         this.zeroSymbol = zeroSymbol
         this.firstSymbol = firstSymbol
+        this.medianSymbol = medianSymbol
         this.lastSymbol = lastSymbol
 
         this.validatePattern = RegExp(`^(${symbols.join('|')})*(${symbols.slice(1).join('|')})$`)
@@ -67,6 +75,23 @@ export default class LexOrder {
         return this.converter.fromBigInt(value)
             .padStart(length, this.zeroSymbol)
             .replace(this.zeroRightPattern, '')
+    }
+
+    intermediate (wordA: string, wordB: string) {
+        if (wordA === wordB) {
+            throw new Error('Both arguments are equal.')
+        }
+
+        const maxLength = Math.max(wordA.length, wordB.length)
+
+        const numA = this.decode(wordA.padEnd(maxLength, this.zeroSymbol))
+
+        const numB = this.decode(wordB.padEnd(maxLength, this.zeroSymbol))
+
+        const sum = numA + numB
+
+        return this.encode(sum / BigInt(2), maxLength) +
+            (sum % BigInt(2) === BigInt(1) ? this.medianSymbol : '')
     }
 
     next (word: string) {
