@@ -44,6 +44,11 @@ const wordWithTrailingZeroValue = BigInt(32)
 const wordWithTrailingZero = '40'
 const wordWithTrailingZeroClean = '4'
 
+// get()
+
+const mockedSymbolsOddLength = mockedSymbols.slice(0, -1)
+const medianSymbol = '4'
+
 // intermediate()
 
 interface IntermediateTestData {
@@ -192,6 +197,9 @@ function mockConverter (symbols: string | string[]): SymbolConverter {
 
 const mockedDecode = jest.fn<bigint, [word: string]>()
 const mockedEncode = jest.fn<string, [value: bigint, length: number]>()
+const mockedIntermediate = jest.fn<string, [wordA: string | null, wordB: string | null]>()
+const mockedNext = jest.fn<string, [word: string]>()
+const mockedPrevious = jest.fn<string, [word: string]>()
 
 function lexOrder ({
     symbols = mockedSymbols,
@@ -334,6 +342,82 @@ describe('encode', () => {
         run(validWordValue, validWord)
         run(wordWithLeadingZeroValue, wordWithLeadingZero)
         run(wordWithTrailingZeroValue, wordWithTrailingZero, wordWithTrailingZeroClean)
+    })
+})
+
+describe('get', () => {
+    const setup = (instance = lexOrder()) => {
+        instance.intermediate = mockedIntermediate
+        instance.next = mockedNext
+        instance.previous = mockedPrevious
+
+        return instance
+    }
+
+    it('calls intermediate()', () => {
+        expect.assertions(4)
+
+        const instance = setup()
+
+        const {
+            wordA: { initial: wordA },
+            wordB: { initial: wordB },
+            result
+        } = intermediateTestData[0]!
+
+        mockedIntermediate.mockReturnValueOnce(result)
+
+        expect(instance.get(wordA, wordB)).toBe(result)
+
+        expect(mockedIntermediate.mock.calls).toEqual([[wordA, wordB]])
+        expect(mockedNext).toHaveBeenCalledTimes(0)
+        expect(mockedPrevious).toHaveBeenCalledTimes(0)
+    })
+
+    it('calls next()', () => {
+        expect.assertions(4)
+
+        const instance = setup()
+
+        mockedNext.mockReturnValueOnce(wordNextAfter)
+
+        expect(instance.get(wordNext, null)).toBe(wordNextAfter)
+
+        expect(mockedIntermediate).toHaveBeenCalledTimes(0)
+        expect(mockedNext.mock.calls).toEqual([[wordNext]])
+        expect(mockedPrevious).toHaveBeenCalledTimes(0)
+    })
+
+    it('calls previous()', () => {
+        expect.assertions(4)
+
+        const instance = setup()
+
+        mockedPrevious.mockReturnValueOnce(wordPreviousAfter)
+
+        expect(instance.get(null, wordPrevious)).toBe(wordPreviousAfter)
+
+        expect(mockedIntermediate).toHaveBeenCalledTimes(0)
+        expect(mockedNext).toHaveBeenCalledTimes(0)
+        expect(mockedPrevious.mock.calls).toEqual([[wordPrevious]])
+    })
+
+    it('returns the median symbol', () => {
+        expect.assertions(5)
+
+        const instance = setup()
+
+        expect(instance.get(null, null)).toBe(medianSymbol)
+
+        const instanceOdd = setup(lexOrder({
+            symbols: mockedSymbolsOddLength
+        }))
+
+        expect(instanceOdd.get(null, null)).toBe(medianSymbol)
+
+        expect(mockedIntermediate).toHaveBeenCalledTimes(0)
+        expect(mockedNext).toHaveBeenCalledTimes(0)
+        expect(mockedPrevious).toHaveBeenCalledTimes(0)
     })
 })
 

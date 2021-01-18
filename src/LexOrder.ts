@@ -77,6 +77,18 @@ export default class LexOrder {
             .replace(this.zeroRightPattern, '')
     }
 
+    get (wordA: string | null, wordB: string | null) {
+        if (wordA !== null && wordB !== null) {
+            return this.intermediate(wordA, wordB)
+        } else if (wordA !== null) {
+            return this.next(wordA)
+        } else if (wordB !== null) {
+            return this.previous(wordB)
+        } else {
+            return this.medianSymbol
+        }
+    }
+
     intermediate (wordA: string, wordB: string) {
         if (wordA === wordB) {
             throw new Error('Both arguments are equal.')
