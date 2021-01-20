@@ -57,18 +57,20 @@ export default class LexOrder {
         this.medianSymbol = medianSymbol
         this.lastSymbol = lastSymbol
 
-        this.validatePattern = RegExp(`^(${symbols.join('|')})*(${symbols.slice(1).join('|')})$`)
+        this.validatePattern = RegExp(`^(${symbols.join('|')})+$`)
         this.overflowPattern = RegExp(`^(${lastSymbol})+$`)
         this.underflowPattern = RegExp(`^(${zeroSymbol})*${firstSymbol}$`)
         this.zeroRightPattern = RegExp(`(${zeroSymbol})+$`)
     }
 
-    decode (word: string) {
-        if (!this.validatePattern.test(word)) {
+    validate (word: string) {
+        const result = word.replace(this.zeroRightPattern, '')
+
+        if (!this.validatePattern.test(result)) {
             throw new Error(`Argument "${word}" is invalid.`)
         }
 
-        return this.converter.toBigInt(word)
+        return result
     }
 
     encode (value: bigint, length: number) {
@@ -90,15 +92,18 @@ export default class LexOrder {
     }
 
     intermediate (wordA: string, wordB: string) {
-        if (wordA === wordB) {
+        const wA = this.validate(wordA)
+        const wB = this.validate(wordB)
+
+        if (wA === wB) {
             throw new Error('Both arguments are equal.')
         }
 
-        const maxLength = Math.max(wordA.length, wordB.length)
+        const maxLength = Math.max(wA.length, wB.length)
 
-        const numA = this.decode(wordA.padEnd(maxLength, this.zeroSymbol))
+        const numA = this.converter.toBigInt(wA.padEnd(maxLength, this.zeroSymbol))
 
-        const numB = this.decode(wordB.padEnd(maxLength, this.zeroSymbol))
+        const numB = this.converter.toBigInt(wB.padEnd(maxLength, this.zeroSymbol))
 
         const sum = numA + numB
 
@@ -107,22 +112,26 @@ export default class LexOrder {
     }
 
     next (word: string) {
+        const w = this.validate(word)
+
         if (
-            this.converter.countSymbols(word) < this.spreadLevel ||
-            this.overflowPattern.test(word)
+            this.converter.countSymbols(w) < this.spreadLevel ||
+            this.overflowPattern.test(w)
         ) {
-            return word + this.firstSymbol
+            return w + this.firstSymbol
         }
 
-        return this.encode(this.decode(word) + BigInt(1), word.length)
+        return this.encode(this.converter.toBigInt(w) + BigInt(1), w.length)
     }
 
     previous (word: string) {
-        if (this.underflowPattern.test(word)) {
-            return ''.padStart(word.length, this.zeroSymbol) + this.lastSymbol
+        const w = this.validate(word)
+
+        if (this.underflowPattern.test(w)) {
+            return ''.padStart(w.length, this.zeroSymbol) + this.lastSymbol
         }
 
-        return this.encode(this.decode(word) - BigInt(1), word.length) +
-            (this.converter.countSymbols(word) < this.spreadLevel ? this.lastSymbol : '')
+        return this.encode(this.converter.toBigInt(w) - BigInt(1), w.length) +
+            (this.converter.countSymbols(w) < this.spreadLevel ? this.lastSymbol : '')
     }
 }
