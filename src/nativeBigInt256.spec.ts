@@ -1,78 +1,15 @@
-import converter from './nativeBigInt256'
+import converter, { decode, encode } from './nativeBigInt256'
 
-const {
-    countSymbols,
-    fromBigInt,
-    toBigInt
-} = converter
+const { average, decrement, increment } = converter
 
-describe('countSymbols', () => {
-    const run = (value: string, result: number) => {
-        expect(countSymbols(value)).toBe(result)
+describe('decode', () => {
+    const run = (word: string, result: number | string) => {
+        expect(decode(word)).toEqual(BigInt(result))
     }
 
-    it('counts how many "symbols" are in a string', () => {
-        expect.assertions(6)
-
-        run('', 0)
-        run('00', 1)
-        run('0011', 2)
-        run('001122', 3)
-        run('0011223300112233', 8)
-        run('001122330011223300112233', 12)
-    })
-
-    it('rounds up when a "symbol" has wrong size', () => {
-        expect.assertions(4)
-
-        run('0', 1)
-        run('001', 2)
-        run('00112', 3)
-        run('0011223', 4)
-    })
-})
-
-describe('fromBigInt', () => {
-    const run = (value: number | string, result: string) => {
-        expect(fromBigInt(BigInt(value))).toBe(result)
-    }
-
-    it('converts "safe" values', () => {
-        expect.assertions(12)
-
-        run(0, '00')
-        run(1, '01')
-        run(15, '0f')
-        run(16, '10')
-        run(42, '2a')
-        run(255, 'ff')
-        run(256, '0100')
-        run(47701, 'ba55')
-        run(12245589, 'bada55')
-        run(16777215, 'ffffff')
-        run(9007199254740991, '1fffffffffffff')
-
-        expect(fromBigInt(BigInt(67553994410557439))).not.toBe('efffffffffffff')
-    })
-
-    it('converts "unsafe" values without loss of precision', () => {
-        expect.assertions(4)
-
-        run('67553994410557439', 'efffffffffffff')
-        run('1152921504606846975', '0fffffffffffffff')
-        run('18446744073709551615', 'ffffffffffffffff')
-        run('85968058271978839505040', '12345678901234567890')
-    })
-})
-
-describe('toBigInt', () => {
-    const run = (value: string, result: number | string) => {
-        expect(toBigInt(value)).toEqual(BigInt(result))
-    }
-
-    const runThrow = (value: string, message: string) => {
+    const runThrow = (word: string, message: string) => {
         try {
-            toBigInt(value)
+            decode(word)
         } catch (error) {
             expect(error).toBeInstanceOf(Error)
             expect(error.message).toBe(message)
@@ -100,18 +37,120 @@ describe('toBigInt', () => {
         run('12345678901234567890', '85968058271978839505040')
     })
 
-    it('throws when the value is empty', () => {
+    it('throws when the word is empty', () => {
         expect.assertions(2)
 
-        runThrow('', 'Value is empty.')
+        runThrow('', 'Argument is empty.')
     })
 
-    it('throws when the value has wrong size', () => {
+    it('throws when the word has wrong size', () => {
         expect.assertions(8)
 
-        runThrow('0', 'Invalid value "0" does not fit the symbol size 2.')
-        runThrow('001', 'Invalid value "001" does not fit the symbol size 2.')
-        runThrow('00112', 'Invalid value "00112" does not fit the symbol size 2.')
-        runThrow('0011223', 'Invalid value "0011223" does not fit the symbol size 2.')
+        runThrow('0', 'Argument "0" is invalid.')
+        runThrow('001', 'Argument "001" is invalid.')
+        runThrow('00112', 'Argument "00112" is invalid.')
+        runThrow('0011223', 'Argument "0011223" is invalid.')
+    })
+
+    it('throws when the word has invalid characters', () => {
+        expect.assertions(8)
+
+        runThrow('0_', 'Argument "0_" is invalid.')
+        runThrow('00-1', 'Argument "00-1" is invalid.')
+        runThrow('001.12', 'Argument "001.12" is invalid.')
+        runThrow('0011 223', 'Argument "0011 223" is invalid.')
+    })
+})
+
+describe('encode', () => {
+    const run = (value: number | string, result: string) => {
+        expect(encode(BigInt(value))).toBe(result)
+    }
+
+    it('converts "safe" values', () => {
+        expect.assertions(12)
+
+        run(0, '00')
+        run(1, '01')
+        run(15, '0f')
+        run(16, '10')
+        run(42, '2a')
+        run(255, 'ff')
+        run(256, '0100')
+        run(47701, 'ba55')
+        run(12245589, 'bada55')
+        run(16777215, 'ffffff')
+        run(9007199254740991, '1fffffffffffff')
+
+        expect(encode(BigInt(67553994410557439))).not.toBe('efffffffffffff')
+    })
+
+    it('converts "unsafe" values without loss of precision', () => {
+        expect.assertions(4)
+
+        run('67553994410557439', 'efffffffffffff')
+        run('1152921504606846975', '0fffffffffffffff')
+        run('18446744073709551615', 'ffffffffffffffff')
+        run('85968058271978839505040', '12345678901234567890')
+    })
+})
+
+describe('decrement', () => {
+    const run = (word: string, result: string) => {
+        expect(decrement(word)).toBe(result)
+    }
+
+    it('decrements the numeric value of a word', () => {
+        expect.assertions(11)
+
+        run('ff', 'fe')
+        run('fe', 'fd')
+        run('02', '01')
+        run('01', '00') // it would be avoided by LexOrder
+        run('00', '-1') // underflow
+
+        run('ff01', 'ff00')
+        run('0101', '0100')
+
+        run('ffff00', 'fffeff')
+        run('00ffff', 'fffe')
+        run('00ffaa', 'ffa9')
+        run('00ff00', 'feff')
+    })
+})
+
+describe('increment', () => {
+    const run = (word: string, result: string) => {
+        expect(increment(word)).toBe(result)
+    }
+
+    it('increments the numeric value of a word', () => {
+        expect.assertions(8)
+
+        run('00', '01')
+        run('01', '02')
+        run('fe', 'ff')
+        run('ff', '0100') // overflow
+
+        run('00ff00', 'ff01')
+        run('00ffa9', 'ffaa')
+        run('00ffff', '010000')
+        run('ffff00', 'ffff01')
+    })
+})
+
+describe('average', () => {
+    const run = (wordA: string, wordB: string, result: string) => {
+        expect(average(wordA, wordB)).toBe(result)
+    }
+
+    it('calculates the numeric values\' average of two words', () => {
+        expect.assertions(5)
+
+        run('dd4b', 'dd4c', 'dd4b80')
+        run('4200', '4201', '420080')
+        run('7fff', '8001', '800000')
+        run('2b00', '4e32', '3c9900')
+        run('0016', '3200', '190b00')
     })
 })

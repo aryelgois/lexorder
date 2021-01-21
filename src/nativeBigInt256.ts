@@ -9,34 +9,47 @@ const symbols = Object.freeze(Array.from(
     (_, i) => i.toString(16).padStart(symbolSize, '0')
 ))
 
-function countSymbols (value: string) {
-    return Math.ceil(value.length / symbolSize)
+const validatePattern = RegExp(`^(${symbols.join('|')})+$`)
+
+export function decode (word: string) {
+    if (word === '') {
+        throw new Error('Argument is empty.')
+    }
+
+    if (!validatePattern.test(word)) {
+        throw new Error(`Argument "${word}" is invalid.`)
+    }
+
+    return BigInt(`0x${word}`)
 }
 
-function fromBigInt (value: bigint) {
+export function encode (value: bigint) {
     const result = value.toString(16)
+    const fullLength = Math.ceil(result.length / symbolSize) * symbolSize
 
-    return result.padStart(countSymbols(result) * symbolSize, '0')
+    return result.padStart(fullLength, '0')
 }
 
-function toBigInt (value: string) {
-    if (value === '') {
-        throw new Error('Value is empty.')
-    }
+function decrement (word: string) {
+    return encode(decode(word) - BigInt(1))
+}
 
-    if (value.length % symbolSize !== 0) {
-        throw new Error(`Invalid value "${value}" does not fit the symbol size ${symbolSize}.`)
-    }
+function increment (word: string) {
+    return encode(decode(word) + BigInt(1))
+}
 
-    return BigInt(`0x${value}`)
+function average (wordA: string, wordB: string) {
+    const sum = decode(wordA) + decode(wordB)
+
+    return encode(sum * BigInt(radix) / BigInt(2))
 }
 
 const converter: SymbolConverter = {
-    radix,
+    symbolSize,
     symbols,
-    countSymbols,
-    fromBigInt,
-    toBigInt
+    decrement,
+    increment,
+    average
 }
 
 export default converter

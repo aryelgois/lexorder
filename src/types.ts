@@ -4,9 +4,9 @@ export interface LexOrderOptions {
 }
 
 export interface SymbolConverter {
-    radix: number
+    symbolSize: number
     symbols: readonly string[]
-    countSymbols: (value: string) => number
-    fromBigInt: (value: bigint) => string
-    toBigInt: (value: string) => bigint
+    decrement: (word: string) => string
+    increment: (word: string) => string
+    average: (wordA: string, wordB: string) => string
 }
