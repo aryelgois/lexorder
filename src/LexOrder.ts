@@ -2,25 +2,25 @@ import type { LexOrderOptions, SymbolConverter } from './types'
 
 export default class LexOrder {
     private converter: SymbolConverter
-    private spreadLevel: number
+    private spreadLength: number
 
     private zeroSymbol: string
     private firstSymbol: string
     private medianSymbol: string
     private lastSymbol: string
 
-    private validatePattern: RegExp
     private overflowPattern: RegExp
     private underflowPattern: RegExp
     private zeroRightPattern: RegExp
 
     constructor (options: LexOrderOptions) {
         this.converter = options.converter
-        this.spreadLevel = options.spreadLevel
 
-        if (this.spreadLevel < 1) {
+        if (options.spreadLevel < 1) {
             throw new Error('The spreadLevel must be at least 1.')
         }
+
+        this.spreadLength = options.converter.symbolSize * options.spreadLevel
 
         const symbols = this.converter.symbols
 
@@ -57,26 +57,17 @@ export default class LexOrder {
         this.medianSymbol = medianSymbol
         this.lastSymbol = lastSymbol
 
-        this.validatePattern = RegExp(`^(${symbols.join('|')})+$`)
         this.overflowPattern = RegExp(`^(${lastSymbol})+$`)
         this.underflowPattern = RegExp(`^(${zeroSymbol})*${firstSymbol}$`)
         this.zeroRightPattern = RegExp(`(${zeroSymbol})+$`)
     }
 
-    validate (word: string) {
-        const result = word.replace(this.zeroRightPattern, '')
-
-        if (!this.validatePattern.test(result)) {
-            throw new Error(`Argument "${word}" is invalid.`)
-        }
-
-        return result
+    clean (word: string) {
+        return word.replace(this.zeroRightPattern, '')
     }
 
-    encode (value: bigint, length: number) {
-        return this.converter.fromBigInt(value)
-            .padStart(length, this.zeroSymbol)
-            .replace(this.zeroRightPattern, '')
+    format (word: string, length: number) {
+        return this.clean(word.padStart(length, this.zeroSymbol))
     }
 
     get (wordA: string | null, wordB: string | null) {
@@ -92,8 +83,8 @@ export default class LexOrder {
     }
 
     intermediate (wordA: string, wordB: string) {
-        const wA = this.validate(wordA)
-        const wB = this.validate(wordB)
+        const wA = this.clean(wordA)
+        const wB = this.clean(wordB)
 
         if (wA === wB) {
             throw new Error('Both arguments are equal.')
@@ -101,37 +92,39 @@ export default class LexOrder {
 
         const maxLength = Math.max(wA.length, wB.length)
 
-        const numA = this.converter.toBigInt(wA.padEnd(maxLength, this.zeroSymbol))
+        const result = this.converter.average(
+            wA.padEnd(maxLength, this.zeroSymbol),
+            wB.padEnd(maxLength, this.zeroSymbol)
+        )
 
-        const numB = this.converter.toBigInt(wB.padEnd(maxLength, this.zeroSymbol))
-
-        const sum = numA + numB
-
-        return this.encode(sum / BigInt(2), maxLength) +
-            (sum % BigInt(2) === BigInt(1) ? this.medianSymbol : '')
+        return this.format(result, maxLength + this.converter.symbolSize)
     }
 
     next (word: string) {
-        const w = this.validate(word)
+        const w = this.clean(word)
 
-        if (
-            this.converter.countSymbols(w) < this.spreadLevel ||
-            this.overflowPattern.test(w)
-        ) {
+        if (this.overflowPattern.test(w)) {
             return w + this.firstSymbol
         }
 
-        return this.encode(this.converter.toBigInt(w) + BigInt(1), w.length)
+        const result = this.converter.increment(
+            w.padEnd(this.spreadLength, this.zeroSymbol)
+        )
+
+        return this.format(result, w.length)
     }
 
     previous (word: string) {
-        const w = this.validate(word)
+        const w = this.clean(word)
 
         if (this.underflowPattern.test(w)) {
             return ''.padStart(w.length, this.zeroSymbol) + this.lastSymbol
         }
 
-        return this.encode(this.converter.toBigInt(w) - BigInt(1), w.length) +
-            (this.converter.countSymbols(w) < this.spreadLevel ? this.lastSymbol : '')
+        const result = this.converter.decrement(
+            w.padEnd(this.spreadLength, this.zeroSymbol)
+        )
+
+        return this.format(result, w.length)
     }
 }

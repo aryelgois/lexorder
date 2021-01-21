@@ -24,26 +24,22 @@ const mockedSpreadLevel = 2
 const spreadLevelLowerLimit = 1
 const spreadLevelTooLow = 0
 
-// validate(), encode()
+// clean(), format()
 
 const validWord = '42'
-const validWordValue = BigInt(34)
 
-// validate()
-
-const invalidWordWithUnknownSymbol = '4x2'
-
-// encode()
-
-const wordWithLeadingZeroValue = BigInt(34)
 const wordWithLeadingZeroBefore = '42'
 const wordWithLeadingZero = '042'
 
-// validate(), encode(), intermediate()
+// clean(), format(), intermediate()
 
-const wordWithTrailingZeroValue = BigInt(32)
 const wordWithTrailingZero = '40'
 const wordWithTrailingZeroClean = '4'
+
+// format()
+
+const wordWithTrailingZeroPadded = '040'
+const wordWithTrailingZeroPaddedAfter = '04'
 
 // get()
 
@@ -53,12 +49,11 @@ const medianSymbol = '4'
 // intermediate()
 
 interface IntermediateTestData {
-    wordA: { initial: string; padded: string; paddedValue: bigint }
-    wordB: { initial: string; padded: string; paddedValue: bigint }
-    maxLength: number
-    average: bigint
-    encoded: string
+    wordA: { initial: string; padded: string }
+    wordB: { initial: string; padded: string }
+    average: string
     result: string
+    formatLength: number
 }
 
 const intermediateTestData: IntermediateTestData[] = [
@@ -66,93 +61,78 @@ const intermediateTestData: IntermediateTestData[] = [
     {
         wordA: {
             initial: '45',
-            padded: '45',
-            paddedValue: BigInt(37)
+            padded: '45'
         },
         wordB: {
             initial: '46',
-            padded: '46',
-            paddedValue: BigInt(38)
+            padded: '46'
         },
-        maxLength: 2,
-        average: BigInt(37),
-        encoded: '45',
-        result: '454'
+        average: '454',
+        result: '454',
+        formatLength: 3
     },
     // close, different level
     {
         wordA: {
             initial: '37',
-            padded: '37',
-            paddedValue: BigInt(31)
+            padded: '37'
         },
         wordB: {
             initial: '4',
-            padded: '40',
-            paddedValue: BigInt(32)
+            padded: '40'
         },
-        maxLength: 2,
-        average: BigInt(31),
-        encoded: '37',
-        result: '374'
+        average: '374',
+        result: '374',
+        formatLength: 3
     },
     // far, same level
     {
         wordA: {
             initial: '25',
-            padded: '25',
-            paddedValue: BigInt(21)
+            padded: '25'
         },
         wordB: {
             initial: '31',
-            padded: '31',
-            paddedValue: BigInt(25)
+            padded: '31'
         },
-        maxLength: 2,
-        average: BigInt(23),
-        encoded: '27',
-        result: '27'
+        average: '270',
+        result: '27',
+        formatLength: 3
     },
     // far, different level
     {
         wordA: {
             initial: '2',
-            padded: '20',
-            paddedValue: BigInt(16)
+            padded: '20'
         },
         wordB: {
             initial: '43',
-            padded: '43',
-            paddedValue: BigInt(35)
+            padded: '43'
         },
-        maxLength: 2,
-        average: BigInt(25),
-        encoded: '31',
-        result: '314'
+        average: '314',
+        result: '314',
+        formatLength: 3
     },
     // far, leading zero
     {
         wordA: {
             initial: '005',
-            padded: '005',
-            paddedValue: BigInt(5)
+            padded: '005'
         },
         wordB: {
             initial: '03',
-            padded: '030',
-            paddedValue: BigInt(24)
+            padded: '030'
         },
-        maxLength: 3,
-        average: BigInt(14),
-        encoded: '016',
-        result: '0164'
+        average: '164',
+        result: '0164',
+        formatLength: 4
     }
 ]
 
 // next(), previous()
 
 const shortWord = '5'
-const shortWordValue = BigInt(5)
+const shortWordPadded = '50'
 
 // next()
 
@@ -163,44 +143,38 @@ const wordOverflowAfter = '771'
 
 const wordNextTrailingZero = '510'
 const wordNext = '51'
-const wordNextValue = BigInt(41)
 const wordNextAfter = '52'
-const wordNextAfterValue = BigInt(42)
 
 // previous()
 
 const shortWordPrevious = '47'
-const shortWordPreviousBeforeAppend = '4'
-const shortWordPreviousBeforeAppendValue = BigInt(4)
 
 const wordUnderflowBefore = '01'
 const wordUnderflowAfter = '007'
 
 const wordPreviousTrailingZero = '470'
 const wordPrevious = '47'
-const wordPreviousValue = BigInt(39)
 const wordPreviousAfter = '46'
-const wordPreviousAfterValue = BigInt(38)
 
 // mocks
 
-const mockedCountSymbols = jest.fn<number, [value: string]>(v => v.length)
-const mockedFromBigInt = jest.fn<string, [value: bigint]>()
-const mockedToBigInt = jest.fn<bigint, [value: string]>()
+const mockedAverage = jest.fn<string, [wordA: string, wordB: string]>()
+const mockedDecrement = jest.fn<string, [word: string]>()
+const mockedIncrement = jest.fn<string, [word: string]>()
 
 function mockConverter (symbols: string | string[]): SymbolConverter {
     return {
-        radix: symbols.length,
+        symbolSize: [...symbols].filter(i => i !== undefined)[0]!.length,
         symbols: Object.freeze(Array.isArray(symbols) ? symbols : [...symbols]),
-        countSymbols: mockedCountSymbols,
-        fromBigInt: mockedFromBigInt,
-        toBigInt: mockedToBigInt
+        decrement: mockedDecrement,
+        increment: mockedIncrement,
+        average: mockedAverage
     }
 }
 
-const mockedValidate = jest.fn<string, [word: string]>()
-const mockedEncode = jest.fn<string, [value: bigint, length: number]>()
-const mockedIntermediate = jest.fn<string, [wordA: string | null, wordB: string | null]>()
+const mockedClean = jest.fn<string, [word: string]>()
+const mockedFormat = jest.fn<string, [word: string, length: number]>()
+const mockedIntermediate = jest.fn<string, [wordA: string, wordB: string]>()
 const mockedNext = jest.fn<string, [word: string]>()
 const mockedPrevious = jest.fn<string, [word: string]>()
 
@@ -211,19 +185,24 @@ function lexOrder ({
     symbols: string | string[]
     spreadLevel: number
 }> = {}) {
-    return new LexOrder({
+    const instance = new LexOrder({
         converter: mockConverter(symbols),
         spreadLevel
     })
-}
 
-// utils
+    mockedClean.mockReset().mockImplementation(instance.clean)
+    mockedFormat.mockReset().mockImplementation(instance.format)
+    mockedIntermediate.mockReset().mockImplementation(instance.intermediate)
+    mockedNext.mockReset().mockImplementation(instance.next)
+    mockedPrevious.mockReset().mockImplementation(instance.previous)
 
-function stringifyBigInt (data: any) {
-    return JSON.stringify(
-        data,
-        (_, v) => typeof v === 'bigint' ? `[BigInt] ${v}` : v
-    )
+    instance.clean = mockedClean
+    instance.format = mockedFormat
+    instance.intermediate = mockedIntermediate
+    instance.next = mockedNext
+    instance.previous = mockedPrevious
+
+    return instance
 }
 
 describe('constructor', () => {
@@ -293,77 +272,46 @@ describe('constructor', () => {
     })
 })
 
-describe('validate', () => {
+describe('clean', () => {
     const run = (word: string, result: string) => {
         const instance = lexOrder()
 
-        expect(instance.validate(word)).toEqual(result)
+        expect(instance.clean(word)).toBe(result)
     }
-
-    const runThrow = (word: string) => {
-        const instance = lexOrder()
-
-        try {
-            instance.validate(word)
-        } catch (error) {
-            expect(error).toBeInstanceOf(Error)
-            expect(error.message).toBe(`Argument "${word}" is invalid.`)
-        }
-    }
-
-    it('checks a valid word', () => {
-        expect.assertions(1)
-
-        run(validWord, validWord)
-    })
 
     it('removes trailing zero symbols', () => {
-        expect.assertions(1)
+        expect.assertions(3)
 
+        run(validWord, validWord)
+        run(wordWithLeadingZero, wordWithLeadingZero)
         run(wordWithTrailingZero, wordWithTrailingZeroClean)
-    })
-
-    it('throws when the argument is invalid', () => {
-        expect.assertions(2)
-
-        runThrow(invalidWordWithUnknownSymbol)
     })
 })
 
-describe('encode', () => {
-    const run = (value: bigint, padded: string, result?: string) => {
+describe('format', () => {
+    const run = (word: string, padded: string, result?: string) => {
         const instance = lexOrder()
 
-        expect(instance.encode(value, padded.length)).toBe(result ?? padded)
+        expect(instance.format(word, padded.length)).toBe(result ?? padded)
+
+        expect(mockedClean.mock.calls).toEqual([[padded]])
     }
 
-    it('converts a decimal BigInt to a word', () => {
-        expect.assertions(3)
+    it('applies padding at the start and removes at the end of a word', () => {
+        expect.assertions(8)
 
-        mockedFromBigInt
-            .mockReturnValueOnce(validWord)
-            .mockReturnValueOnce(wordWithLeadingZeroBefore)
-            .mockReturnValueOnce(wordWithTrailingZero)
-
-        run(validWordValue, validWord)
-        run(wordWithLeadingZeroValue, wordWithLeadingZero)
-        run(wordWithTrailingZeroValue, wordWithTrailingZero, wordWithTrailingZeroClean)
+        run(validWord, validWord)
+        run(wordWithLeadingZeroBefore, wordWithLeadingZero)
+        run(wordWithTrailingZero, wordWithTrailingZero, wordWithTrailingZeroClean)
+        run(wordWithTrailingZero, wordWithTrailingZeroPadded, wordWithTrailingZeroPaddedAfter)
     })
 })
 
 describe('get', () => {
-    const setup = (instance = lexOrder()) => {
-        instance.intermediate = mockedIntermediate
-        instance.next = mockedNext
-        instance.previous = mockedPrevious
-
-        return instance
-    }
-
     it('calls intermediate()', () => {
         expect.assertions(4)
 
-        const instance = setup()
+        const instance = lexOrder()
 
         const {
             wordA: { initial: wordA },
@@ -383,7 +331,7 @@ describe('get', () => {
     it('calls next()', () => {
         expect.assertions(4)
 
-        const instance = setup()
+        const instance = lexOrder()
 
         mockedNext.mockReturnValueOnce(wordNextAfter)
 
@@ -397,7 +345,7 @@ describe('get', () => {
     it('calls previous()', () => {
         expect.assertions(4)
 
-        const instance = setup()
+        const instance = lexOrder()
 
         mockedPrevious.mockReturnValueOnce(wordPreviousAfter)
 
@@ -411,13 +359,13 @@ describe('get', () => {
     it('returns the median symbol', () => {
         expect.assertions(5)
 
-        const instance = setup()
+        const instance = lexOrder()
 
         expect(instance.get(null, null)).toBe(medianSymbol)
 
-        const instanceOdd = setup(lexOrder({
+        const instanceOdd = lexOrder({
             symbols: mockedSymbolsOddLength
-        }))
+        })
 
         expect(instanceOdd.get(null, null)).toBe(medianSymbol)
 
@@ -428,57 +376,38 @@ describe('get', () => {
 })
 
 describe('intermediate', () => {
-    const setup = (instance = lexOrder()) => {
-        instance.validate = mockedValidate
-        instance.encode = mockedEncode
-
-        return instance
-    }
-
     it('calculates the average from the numeric value of two words', () => {
-        expect.assertions(4 * intermediateTestData.length)
+        expect.assertions(5 * intermediateTestData.length)
 
-        const instance = setup()
+        const instance = lexOrder()
 
-        for (const { wordA, wordB, maxLength, average, encoded, result } of intermediateTestData) {
-            mockedValidate
-                .mockReturnValueOnce(wordA.initial)
-                .mockReturnValueOnce(wordB.initial)
-
-            mockedToBigInt
-                .mockReturnValueOnce(wordA.paddedValue)
-                .mockReturnValueOnce(wordB.paddedValue)
-
-            mockedEncode.mockReturnValueOnce(encoded)
+        for (const { wordA, wordB, average, result, formatLength } of intermediateTestData) {
+            mockedAverage.mockReturnValueOnce(average)
 
             expect(instance.intermediate(wordA.initial, wordB.initial)).toBe(result)
 
-            expect(mockedValidate.mock.calls).toEqual([
+            expect(mockedClean).toHaveBeenCalledTimes(3)
+            expect(mockedClean.mock.calls.slice(0, 2)).toEqual([
                 [wordA.initial],
                 [wordB.initial]
             ])
-            expect(mockedToBigInt.mock.calls).toEqual([
-                [wordA.padded],
-                [wordB.padded]
+            expect(mockedAverage.mock.calls).toEqual([
+                [wordA.padded, wordB.padded]
             ])
-            expect(stringifyBigInt(mockedEncode.mock.calls)).toEqual(stringifyBigInt([
-                [average, maxLength]
-            ]))
+            expect(mockedFormat.mock.calls).toEqual([
+                [average, formatLength]
+            ])
 
-            mockedValidate.mockClear()
-            mockedToBigInt.mockClear()
-            mockedEncode.mockClear()
+            mockedClean.mockClear()
+            mockedAverage.mockClear()
+            mockedFormat.mockClear()
         }
     })
 
     it('throws when both arguments are equal', () => {
         expect.assertions(5)
 
-        const instance = setup()
-
-        mockedValidate
-            .mockReturnValueOnce(wordWithTrailingZero)
-            .mockReturnValueOnce(wordWithTrailingZero)
+        const instance = lexOrder()
 
         try {
             instance.intermediate(wordWithTrailingZero, wordWithTrailingZeroClean)
@@ -487,139 +416,103 @@ describe('intermediate', () => {
             expect(error.message).toBe('Both arguments are equal.')
         }
 
-        expect(mockedValidate.mock.calls).toEqual([
+        expect(mockedClean.mock.calls).toEqual([
             [wordWithTrailingZero],
             [wordWithTrailingZeroClean]
         ])
-        expect(mockedToBigInt).toHaveBeenCalledTimes(0)
-        expect(mockedEncode).toHaveBeenCalledTimes(0)
+        expect(mockedAverage).toHaveBeenCalledTimes(0)
+        expect(mockedFormat).toHaveBeenCalledTimes(0)
     })
 })
 
 describe('next', () => {
-    const setup = () => {
-        const instance = lexOrder()
-
-        instance.validate = mockedValidate
-        instance.encode = mockedEncode
-
-        return instance
-    }
-
     it('increments the numeric value in the word', () => {
         expect.assertions(5)
 
-        const instance = setup()
+        const instance = lexOrder()
 
-        mockedValidate.mockReturnValueOnce(wordNext)
-        mockedToBigInt.mockReturnValueOnce(wordNextValue)
-        mockedEncode.mockReturnValueOnce(wordNextAfter)
+        mockedIncrement.mockReturnValueOnce(wordNextAfter)
 
         expect(instance.next(wordNextTrailingZero)).toBe(wordNextAfter)
 
-        expect(mockedValidate.mock.calls).toEqual([[wordNextTrailingZero]])
-        expect(mockedCountSymbols.mock.calls).toEqual([[wordNext]])
-        expect(mockedToBigInt.mock.calls).toEqual([[wordNext]])
-        expect(stringifyBigInt(mockedEncode.mock.calls)).toEqual(stringifyBigInt([
-            [wordNextAfterValue, wordNext.length]
-        ]))
+        expect(mockedClean).toHaveBeenCalledTimes(2)
+        expect(mockedClean.mock.calls.slice(0, 1)).toEqual([[wordNextTrailingZero]])
+        expect(mockedIncrement.mock.calls).toEqual([[wordNext]])
+        expect(mockedFormat.mock.calls).toEqual([[wordNextAfter, wordNext.length]])
     })
 
     describe('appends the first symbol', () => {
         test('when the word level is lower than the spreadLevel', () => {
             expect.assertions(5)
 
-            const instance = setup()
+            const instance = lexOrder()
 
-            mockedValidate.mockReturnValueOnce(shortWord)
+            mockedIncrement.mockReturnValueOnce(shortWordNext)
 
             expect(instance.next(shortWord)).toBe(shortWordNext)
 
-            expect(mockedValidate.mock.calls).toEqual([[shortWord]])
-            expect(mockedCountSymbols.mock.calls).toEqual([[shortWord]])
-            expect(mockedToBigInt).toHaveBeenCalledTimes(0)
-            expect(mockedEncode).toHaveBeenCalledTimes(0)
+            expect(mockedClean).toHaveBeenCalledTimes(2)
+            expect(mockedClean.mock.calls.slice(0, 1)).toEqual([[shortWord]])
+            expect(mockedIncrement.mock.calls).toEqual([[shortWordPadded]])
+            expect(mockedFormat.mock.calls).toEqual([[shortWordNext, shortWord.length]])
         })
 
         test('when an increment would overflow', () => {
-            expect.assertions(5)
+            expect.assertions(4)
 
-            const instance = setup()
-
-            mockedValidate.mockReturnValueOnce(wordOverflowBefore)
+            const instance = lexOrder()
 
             expect(instance.next(wordOverflowBefore)).toBe(wordOverflowAfter)
 
-            expect(mockedValidate.mock.calls).toEqual([[wordOverflowBefore]])
-            expect(mockedCountSymbols.mock.calls).toEqual([[wordOverflowBefore]])
-            expect(mockedToBigInt).toHaveBeenCalledTimes(0)
-            expect(mockedEncode).toHaveBeenCalledTimes(0)
+            expect(mockedClean.mock.calls).toEqual([[wordOverflowBefore]])
+            expect(mockedIncrement).toHaveBeenCalledTimes(0)
+            expect(mockedFormat).toHaveBeenCalledTimes(0)
         })
     })
 })
 
 describe('previous', () => {
-    const setup = () => {
-        const instance = lexOrder()
-
-        instance.validate = mockedValidate
-        instance.encode = mockedEncode
-
-        return instance
-    }
-
     it('decrements the numeric value in the word', () => {
         expect.assertions(5)
 
-        const instance = setup()
+        const instance = lexOrder()
 
-        mockedValidate.mockReturnValueOnce(wordPrevious)
-        mockedToBigInt.mockReturnValueOnce(wordPreviousValue)
-        mockedEncode.mockReturnValueOnce(wordPreviousAfter)
+        mockedDecrement.mockReturnValueOnce(wordPreviousAfter)
 
         expect(instance.previous(wordPreviousTrailingZero)).toBe(wordPreviousAfter)
 
-        expect(mockedValidate.mock.calls).toEqual([[wordPreviousTrailingZero]])
-        expect(mockedToBigInt.mock.calls).toEqual([[wordPrevious]])
-        expect(stringifyBigInt(mockedEncode.mock.calls)).toEqual(stringifyBigInt([
-            [wordPreviousAfterValue, wordPrevious.length]
-        ]))
-        expect(mockedCountSymbols.mock.calls).toEqual([[wordPrevious]])
+        expect(mockedClean).toHaveBeenCalledTimes(2)
+        expect(mockedClean.mock.calls.slice(0, 1)).toEqual([[wordPreviousTrailingZero]])
+        expect(mockedDecrement.mock.calls).toEqual([[wordPrevious]])
+        expect(mockedFormat.mock.calls).toEqual([[wordPreviousAfter, wordPrevious.length]])
     })
 
     describe('appends the last symbol', () => {
         test('when the word level is lower than the spreadLevel', () => {
             expect.assertions(5)
 
-            const instance = setup()
+            const instance = lexOrder()
 
-            mockedValidate.mockReturnValueOnce(shortWord)
-            mockedToBigInt.mockReturnValueOnce(shortWordValue)
-            mockedEncode.mockReturnValueOnce(shortWordPreviousBeforeAppend)
+            mockedDecrement.mockReturnValueOnce(shortWordPrevious)
 
             expect(instance.previous(shortWord)).toBe(shortWordPrevious)
 
-            expect(mockedValidate.mock.calls).toEqual([[shortWord]])
-            expect(mockedToBigInt.mock.calls).toEqual([[shortWord]])
-            expect(stringifyBigInt(mockedEncode.mock.calls)).toEqual(stringifyBigInt([
-                [shortWordPreviousBeforeAppendValue, shortWord.length]
-            ]))
-            expect(mockedCountSymbols.mock.calls).toEqual([[shortWord]])
+            expect(mockedClean).toHaveBeenCalledTimes(2)
+            expect(mockedClean.mock.calls.slice(0, 1)).toEqual([[shortWord]])
+            expect(mockedDecrement.mock.calls).toEqual([[shortWordPadded]])
+            expect(mockedFormat.mock.calls).toEqual([[shortWordPrevious, shortWord.length]])
         })
 
         test('when a decrement would underflow', () => {
-            expect.assertions(5)
+            expect.assertions(4)
 
-            const instance = setup()
-
-            mockedValidate.mockReturnValueOnce(wordUnderflowBefore)
+            const instance = lexOrder()
 
             expect(instance.previous(wordUnderflowBefore)).toBe(wordUnderflowAfter)
 
-            expect(mockedValidate.mock.calls).toEqual([[wordUnderflowBefore]])
-            expect(mockedToBigInt).toHaveBeenCalledTimes(0)
-            expect(mockedEncode).toHaveBeenCalledTimes(0)
-            expect(mockedCountSymbols).toHaveBeenCalledTimes(0)
+            expect(mockedClean.mock.calls).toEqual([[wordUnderflowBefore]])
+            expect(mockedDecrement).toHaveBeenCalledTimes(0)
+            expect(mockedFormat).toHaveBeenCalledTimes(0)
         })
     })
 })
