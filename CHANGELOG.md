@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests for `nativeBigInt256`
 - Unit tests for `LexOrder`
 - Integration tests from `index.ts`
+- Documentation about installation, usage and the `SymbolConverter`
 
 
 [unreleased]: https://github.com/aryelgois/lexorder/compare/initial-commit...HEAD
