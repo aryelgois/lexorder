@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [0.1.0] - 2021-01-27
+
 ### Added
 
 - Dependency: TypeScript
@@ -25,4 +28,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation about installation, usage and the `SymbolConverter`
 
 
-[unreleased]: https://github.com/aryelgois/lexorder/compare/initial-commit...HEAD
+[unreleased]: https://github.com/aryelgois/lexorder/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/aryelgois/lexorder/compare/initial-commit...v0.1.0
