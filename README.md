@@ -24,16 +24,19 @@ to some amount of symbols per word
 With two different words,
 it can calculate the `intermediate()`
 with a simple average.
+At the beginning,
+you can use the `median` getter
+to have a starting point.
 
 To simplify the usage,
 there is also a `get()` method
 that calls the others
-and can give a starting point
+and can also give a starting point
 when you still don't have any
 words:
 
 ```js
-lexOrder.get(null, null)   => medianSymbol
+lexOrder.get(null, null)   => lexOrder.median
 lexOrder.get(word, null)   => lexOrder.next(word)
 lexOrder.get(null, word)   => lexOrder.previous(word)
 lexOrder.get(wordA, wordB) => lexOrder.intermediate(wordA, wordB)

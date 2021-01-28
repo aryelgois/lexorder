@@ -41,7 +41,7 @@ const wordWithTrailingZeroClean = '4'
 const wordWithTrailingZeroPadded = '040'
 const wordWithTrailingZeroPaddedAfter = '04'
 
-// get()
+// get(), median
 
 const mockedSymbolsOddLength = mockedSymbols.slice(0, -1)
 const medianSymbol = '4'
@@ -269,6 +269,22 @@ describe('constructor', () => {
             () => lexOrder({ symbols: symbolsUndefinedLast }),
             'Got undefined when reading last symbol.'
         )
+    })
+})
+
+describe('median', () => {
+    it('returns the median symbol', () => {
+        expect.assertions(2)
+
+        const instance = lexOrder()
+
+        expect(instance.median).toBe(medianSymbol)
+
+        const instanceOdd = lexOrder({
+            symbols: mockedSymbolsOddLength
+        })
+
+        expect(instanceOdd.median).toBe(medianSymbol)
     })
 })
 

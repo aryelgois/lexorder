@@ -62,6 +62,10 @@ export default class LexOrder {
         this.zeroRightPattern = RegExp(`(${zeroSymbol})+$`)
     }
 
+    get median () {
+        return this.medianSymbol
+    }
+
     clean (word: string) {
         return word.replace(this.zeroRightPattern, '')
     }

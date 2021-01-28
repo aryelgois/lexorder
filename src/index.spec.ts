@@ -122,10 +122,11 @@ describe('LexOrder', () => {
     })
 
     it('returns the median symbol', () => {
-        expect.assertions(1)
+        expect.assertions(2)
 
         const instance = factory()
 
+        expect(instance.median).toBe(medianSymbol)
         expect(instance.get(null, null)).toBe(medianSymbol)
     })
 
